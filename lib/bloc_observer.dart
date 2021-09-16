@@ -1,4 +1,8 @@
+import 'dart:convert';
+
+import 'package:awesomeweather/Bloc/bloc.dart';
 import 'package:bloc/bloc.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 
 class WeatherBlocObserver extends BlocObserver {
   @override
@@ -17,6 +21,18 @@ class WeatherBlocObserver extends BlocObserver {
   void onTransition(Bloc bloc, Transition transition) {
     super.onTransition(bloc, transition);
     print('onTransition $transition');
+    final dynamic state = transition.nextState;
+    if (state is WeatherLoaded) {
+      if (bloc is HydratedBloc) {
+        final statejson = bloc.toJson(state);
+        if (statejson != null) {
+          HydratedBloc.storage.write(
+            bloc.runtimeType.toString(),
+            jsonEncode(statejson),
+          );
+        }
+      }
+    }
   }
 
   @override

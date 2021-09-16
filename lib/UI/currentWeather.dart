@@ -23,7 +23,7 @@ class CurrentWeather extends StatelessWidget {
           Text(
             getDate(timestamp: forecast.current.dt, format: 'MMMMEEEEd'),
             style: TextStyle(
-              color: Colors.white60,
+              color: Colors.white70,
               fontWeight: FontWeight.w300,
             ),
           ),

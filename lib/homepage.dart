@@ -8,6 +8,7 @@ import 'package:awesomeweather/UI/weather_viewer.dart';
 import 'package:awesomeweather/WeatherModals/forcast.dart';
 import 'package:awesomeweather/WeatherModals/locations.dart';
 import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_weather_bg_null_safety/flutter_weather_bg.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -26,6 +27,8 @@ class MyHomePage extends StatelessWidget {
             return Loading();
           } else if (state is WeatherLoaded) {
             return Awesome(forecast: state.forecast, location: state.location);
+          } else if (state is WeatherError) {
+            return ErrorWeather(error: state.error);
           } else {
             return WeatherSearch();
           }
@@ -61,8 +64,14 @@ class WeatherSearch extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 35),
               TextField(
+                // onTap: () async {
+                //   var status = await Permission.storage.request();
+                //   if (status.isDenied || status.isPermanentlyDenied) {
+                //     SystemNavigator.pop();
+                //   }
+                // },
                 textAlign: TextAlign.center,
                 cursorColor: Colors.cyanAccent,
                 cursorRadius: Radius.circular(5),
@@ -71,8 +80,9 @@ class WeatherSearch extends StatelessWidget {
                     TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 controller: text,
                 cursorHeight: 25,
-                onSubmitted: (text) =>
-                    context.read<WeatherBloc>().add(GetWeather(text)),
+                onSubmitted: (text) {
+                  context.read<WeatherBloc>().add(GetWeather(text));
+                },
                 decoration: InputDecoration(
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.white),
@@ -152,7 +162,7 @@ class Awesome extends StatelessWidget {
               child: SmartRefresher(
                 controller: _refreshController,
                 onRefresh: () {
-                  context.read<WeatherBloc>().add(ResetWeather(location.name));
+                  context.read<WeatherBloc>().add(ResetWeather(location));
                 },
                 child: ListView(
                   physics: BouncingScrollPhysics(),
@@ -211,7 +221,7 @@ class Awesome extends StatelessWidget {
                       color: Colors.white,
                       onPressed: () => context
                           .read<WeatherBloc>()
-                          .add(ResetWeather(location.name)),
+                          .add(ResetWeather(location)),
                       icon: Icon(Icons.refresh),
                     )
                   ],
@@ -226,15 +236,54 @@ class Awesome extends StatelessWidget {
 }
 
 class ErrorWeather extends StatelessWidget {
-  const ErrorWeather({Key? key}) : super(key: key);
+  final String error;
+  const ErrorWeather({Key? key, required this.error}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        child: Text(
-          'Something Went Wrong ',
-          style: TextStyle(color: Colors.purple, fontSize: 40),
+    return Container(
+      height: double.infinity,
+      width: double.infinity,
+      decoration: BoxDecoration(
+          image: DecorationImage(
+              image: AssetImage('Assets/images/weather.gif'),
+              fit: BoxFit.cover)),
+      child: Dialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0)), //this right here
+        child: Container(
+          height: 300.0,
+          width: 300.0,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.all(10.0),
+                child: Text(
+                  error,
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(10.0),
+                child: Text(
+                  'Bete dhang se dalo batamiji mat karo app le dubegi phone ko',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              TextButton(
+                  onPressed: () {
+                    context.read<WeatherBloc>().add(GotoInitial());
+                  },
+                  child: Text(
+                    'Got It!',
+                    style: TextStyle(color: Colors.purple, fontSize: 18.0),
+                  ))
+            ],
+          ),
         ),
       ),
     );

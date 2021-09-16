@@ -1,3 +1,5 @@
+
+import 'package:awesomeweather/weatherRepo.dart';
 import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:awesomeweather/Bloc/weather_bloc.dart';
@@ -5,27 +7,7 @@ import 'package:awesomeweather/Bloc/weather_event.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-class SearchSuggestions {
-  static const apiID = '1f077d605f0216ac404a053d35569e05';
-  static Future<List<String>> searchCities(TextEditingController query) async {
-    final cityName = query.text;
-    final geolocationbaseURL =
-        'http://api.openweathermap.org/geo/1.0/direct?q=';
-    final url = geolocationbaseURL + cityName + '&limit=3&appid=' + apiID;
-    final response = await http.get(
-      Uri.parse(url),
-    );
-    if (response.statusCode != 200) throw Exception();
-    final body = json.decode(response.body);
-    print(body);
-    return body.map<String>((json) {
-      final city = json['name'];
-      final country = json['country'];
-      return '$city, $country';
-    }).toList();
-  }
-}
-
+]
 class SearchPage extends StatefulWidget {
   SearchPage({Key? key}) : super(key: key);
 
@@ -34,7 +16,8 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  final recentCities = [
+
+  final popularCities = [
     'Delhi',
     'Mumbai',
     'Bangalore',
@@ -56,87 +39,88 @@ class _SearchPageState extends State<SearchPage> {
         iconTheme: IconThemeData(color: Colors.blueAccent),
         elevation: 0,
         leading: IconButton(
+            iconSize: 35,
             onPressed: () {
               Navigator.of(context).pop();
             },
-            icon: Icon(Icons.arrow_back)),
+            icon: Icon(Icons.keyboard_arrow_left_rounded)),
         shadowColor: Colors.transparent,
         backgroundColor: Colors.black,
-        title: Center(
-          child: Container(
-            constraints: BoxConstraints(maxHeight: 40, maxWidth: 400),
-            child: TextField(
-              textAlign: TextAlign.center,
-              onChanged: (text) async {
-                var t = await SearchSuggestions.searchCities(query);
-                setState(() {
-                  cities = t == [] ? recentCities : t;
-                });
-              },
-              cursorColor: Colors.cyanAccent,
-              cursorRadius: Radius.circular(5),
-              cursorWidth: 4,
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              controller: query,
-              cursorHeight: 25,
-              onSubmitted: (text) {
-                close(context, query);
-              },
-              decoration: InputDecoration(
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
-                  borderRadius: BorderRadius.circular(30),
-                ),
+        title: Card(
+          color: Colors.cyanAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          elevation: 10,
+          // constraints: BoxConstraints(maxHeight: 40, maxWidth: 400),
+          child: TextField(
+            onChanged: (text) {
+              setState(() {
+                buildSuggestions(context);
+              });
+            },
+            cursorColor: Colors.cyanAccent,
+            cursorRadius: Radius.circular(5),
+            cursorWidth: 4,
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            controller: query,
+            cursorHeight: 25,
+            decoration: InputDecoration(
+              contentPadding: EdgeInsets.only(left: 40),
+              hintText: ' Search your City',
+              hintStyle: TextStyle(color: Colors.white60),
+              suffixIcon: IconButton(
+                iconSize: 20,
+                color: Colors.white,
+                onPressed: () {
+                  if (query.text == '') {
+                    Navigator.of(context).pop();
+                  } else {
+                    query.clear();
+                  }
+                },
+                icon: Icon(Icons.clear),
+              ),
+              fillColor: Colors.black87,
+              filled: true,
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+
               ),
             ),
           ),
         ),
-        actions: [
-          IconButton(
-              onPressed: () {
-                if (query.text == '') {
-                  Navigator.of(context).pop();
-                } else {
-                  query.text = '';
-                  setState(() {
-                    cities = recentCities;
-                  });
-                }
-              },
-              icon: Icon(Icons.clear))
-        ],
       ),
-      body: buildSuggestions(context),
+      body: query.text.isEmpty
+          ? buildPopularCities(context, popularCities)
+          : buildSuggestions(context),
     );
   }
 
-
   close(BuildContext context, TextEditingController query) {
-    context.read<WeatherBloc>().add(GetWeather(query.text));
+    if (query.text.isNotEmpty)
+      context.read<WeatherBloc>().add(GetWeather(query.text));
     Navigator.of(context).pop();
   }
 
   Widget buildSuggestions(BuildContext context) => FutureBuilder<List<String>>(
-      future: SearchSuggestions.searchCities(query),
-      builder: (context, snapshot) {
-        switch (snapshot.connectionState) {
-          case ConnectionState.waiting:
-            return Center(child: CircularProgressIndicator());
-          case ConnectionState.none:
-            return buildPopularCities(context, recentCities);
-          default:
-            if (snapshot.hasData)
-              return buildPopularCities(context, cities);
-            else {
-              return buildPopularCities(context, recentCities);
-            }
-        }
-      });
+        future: WeatherRepo.searchCities(query.text),
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.waiting:
+              return Center(child: CircularProgressIndicator());
+            default:
+              if (snapshot.hasError || snapshot.data!.isEmpty) {
+                return buildPopularCities(context, popularCities);
+              } else {
+                return buildPopularCities(context, snapshot.data);
+              }
+          }
+        },
+      );
 
   List<Widget> recentCity(BuildContext context, List<String>? city) {
     int count = city!.length;
@@ -165,7 +149,7 @@ class _SearchPageState extends State<SearchPage> {
             )).toList();
   }
 
-  Widget buildPopularCities(BuildContext context, List<String> recents) {
+  Widget buildPopularCities(BuildContext context, List<String>? recents) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: ListView(
@@ -173,18 +157,14 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           Wrap(
             children: [
-              Container(
-                margin: EdgeInsets.all(8),
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white24,
-                ),
-                child: Text(
-                  'Locate',
-                  style: TextStyle(
-                    color: Colors.cyanAccent,
-                    fontSize: 15,
+              Padding(
+                padding: const EdgeInsets.only(left: 10, top: 8),
+                child: TextButton(
+                  style: buttonStyle,
+                  onPressed: () {},
+                  child: Text(
+                    'Locate',
+                    style: TextStyle(color: Colors.cyanAccent),
                   ),
                 ),
               ),
@@ -195,4 +175,9 @@ class _SearchPageState extends State<SearchPage> {
       ),
     );
   }
+
+  ButtonStyle buttonStyle = TextButton.styleFrom(
+      backgroundColor: Colors.white24,
+      padding: EdgeInsets.all(15),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)));
 }

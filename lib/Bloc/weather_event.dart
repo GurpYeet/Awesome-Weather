@@ -1,3 +1,4 @@
+import 'package:awesomeweather/WeatherModals/locations.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 
@@ -20,13 +21,18 @@ class GetWeather extends WeatherEvent {
 }
 
 class ResetWeather extends WeatherEvent {
-  final String city;
+  final Location location;
   // final int update;
 
   // Equatable allows for a simple value equality in Dart.
   // All you need to do is to pass the class fields to the super constructor.
-  ResetWeather(/*this.update*/ this.city) : super([/*update*/ city]);
+  ResetWeather(/*this.update*/ this.location) : super([/*update*/ location]);
 
   @override
-  List<Object?> get props => [city];
+  List<Object?> get props => [location];
+}
+
+class GotoInitial extends WeatherEvent {
+  @override
+  List<Object?> get props => [];
 }

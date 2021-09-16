@@ -19,7 +19,7 @@ class WeatherBloc extends HydratedBloc<WeatherEvent, WeatherState> {
         Location.fromJson(json['location']),
       );
     } else {
-      return WeatherError();
+      return WeatherInitial();
     }
   }
 
@@ -46,13 +46,16 @@ class WeatherBloc extends HydratedBloc<WeatherEvent, WeatherState> {
         yield WeatherLoaded(weatherForecast, location);
       } catch (error) {
         print(error);
-        yield WeatherError();
+        yield WeatherError('Opps Something Went Wrong');
       }
+    } else if (event is GotoInitial) {
+      yield WeatherInitial();
     } else if (event is ResetWeather) {
       yield WeatherLoading();
-      Location location = await weatherRepo.getCurrentLatandLon(event.city);
-      Forecast weatherForecast = await weatherRepo.getCurrentForcast(location);
-      yield WeatherLoaded(weatherForecast, location);
+      // Location location = await weatherRepo.getCurrentLatandLon(event.city);
+      Forecast weatherForecast =
+          await weatherRepo.getCurrentForcast(event.location);
+      yield WeatherLoaded(weatherForecast, event.location);
     }
   }
 }

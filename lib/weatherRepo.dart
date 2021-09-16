@@ -18,6 +18,26 @@ class WeatherRepo {
     return Location.fromJson(jsonLocation[0]);
   }
 
+  static Future<List<String>> searchCities(String query) async {
+    final cityName = query;
+    final geolocationbaseURL =
+        'http://api.openweathermap.org/geo/1.0/direct?q=';
+    final url = geolocationbaseURL +
+        cityName +
+        '&limit=3&appid=1f077d605f0216ac404a053d35569e05';
+    final response = await http.get(
+      Uri.parse(url),
+    );
+    if (response.statusCode != 200) throw Exception();
+    final body = json.decode(response.body);
+    print(body);
+    return body.map<String>((json) {
+      final city = json['name'];
+      final country = json['country'];
+      return '$city, $country';
+    }).toList();
+  }
+
   Future<Forecast> getCurrentForcast(Location location) async {
     final lat = location.lat;
     final long = location.lon;
