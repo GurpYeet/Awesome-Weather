@@ -11,10 +11,13 @@ abstract class WeatherEvent extends Equatable {
 
 class GetWeather extends WeatherEvent {
   final String city;
-
+  // final Forecast? previousForecast;
+  // final Location? previousLocation;
+  final Map<String, dynamic> predata;
   // Equatable allows for a simple value equality in Dart.
   // All you need to do is to pass the class fields to the super constructor.
-  GetWeather(this.city) : super([city]);
+  GetWeather({required this.city, required this.predata})
+      : super([city, predata]);
 
   @override
   List<Object?> get props => [city];
@@ -30,9 +33,4 @@ class ResetWeather extends WeatherEvent {
 
   @override
   List<Object?> get props => [location];
-}
-
-class GotoInitial extends WeatherEvent {
-  @override
-  List<Object?> get props => [];
 }

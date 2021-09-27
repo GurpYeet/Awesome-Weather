@@ -1,22 +1,24 @@
+// ignore_for_file: must_be_immutable
 
+import 'package:awesomeweather/WeatherModals/forcast.dart';
+import 'package:awesomeweather/WeatherModals/locations.dart';
 import 'package:awesomeweather/weatherRepo.dart';
-import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:awesomeweather/Bloc/weather_bloc.dart';
 import 'package:awesomeweather/Bloc/weather_event.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
-]
 class SearchPage extends StatefulWidget {
-  SearchPage({Key? key}) : super(key: key);
+  Forecast? forecast;
+  Location? location;
+  SearchPage({Key? key, required this.forecast, required this.location})
+      : super(key: key);
 
   @override
   _SearchPageState createState() => _SearchPageState();
 }
 
 class _SearchPageState extends State<SearchPage> {
-
   final popularCities = [
     'Delhi',
     'Mumbai',
@@ -54,11 +56,15 @@ class _SearchPageState extends State<SearchPage> {
           elevation: 10,
           // constraints: BoxConstraints(maxHeight: 40, maxWidth: 400),
           child: TextField(
+            autofocus: true,
             onChanged: (text) {
               setState(() {
                 buildSuggestions(context);
               });
             },
+            // onSubmitted: (data) {
+            //   close(context, query);
+            // },
             cursorColor: Colors.cyanAccent,
             cursorRadius: Radius.circular(5),
             cursorWidth: 4,
@@ -77,6 +83,9 @@ class _SearchPageState extends State<SearchPage> {
                     Navigator.of(context).pop();
                   } else {
                     query.clear();
+                    setState(() {
+                      buildSuggestions(context);
+                    });
                   }
                 },
                 icon: Icon(Icons.clear),
@@ -88,7 +97,6 @@ class _SearchPageState extends State<SearchPage> {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
-
               ),
             ),
           ),
@@ -102,7 +110,15 @@ class _SearchPageState extends State<SearchPage> {
 
   close(BuildContext context, TextEditingController query) {
     if (query.text.isNotEmpty)
-      context.read<WeatherBloc>().add(GetWeather(query.text));
+      context.read<WeatherBloc>().add(
+            GetWeather(
+              city: query.text,
+              predata: {
+                'forecast': widget.forecast,
+                'location': widget.location
+              },
+            ),
+          );
     Navigator.of(context).pop();
   }
 
@@ -111,9 +127,31 @@ class _SearchPageState extends State<SearchPage> {
         builder: (context, snapshot) {
           switch (snapshot.connectionState) {
             case ConnectionState.waiting:
-              return Center(child: CircularProgressIndicator());
+              return Container(
+                color: Colors.black,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    backgroundColor: Colors.black,
+                  ),
+                ),
+              );
             default:
               if (snapshot.hasError || snapshot.data!.isEmpty) {
+                return Container(
+                  color: Colors.black,
+                  child: Center(
+                    child: Text(
+                      'No Such City Found',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                );
+              } else if ((snapshot.hasError || snapshot.data!.isEmpty) ||
+                  query.text.isEmpty) {
                 return buildPopularCities(context, popularCities);
               } else {
                 return buildPopularCities(context, snapshot.data);

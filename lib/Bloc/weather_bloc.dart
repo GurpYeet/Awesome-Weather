@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:awesomeweather/WeatherModals/forcast.dart';
 import 'package:awesomeweather/WeatherModals/locations.dart';
+import 'package:awesomeweather/app_exception.dart';
+// import 'package:awesomeweather/homepage.dart';
 import 'package:awesomeweather/weatherRepo.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
@@ -41,18 +43,21 @@ class WeatherBloc extends HydratedBloc<WeatherEvent, WeatherState> {
       yield WeatherLoading();
       try {
         Location location = await weatherRepo.getCurrentLatandLon(event.city);
+
         Forecast weatherForecast =
             await weatherRepo.getCurrentForcast(location);
         yield WeatherLoaded(weatherForecast, location);
       } catch (error) {
-        print(error);
-        yield WeatherError('Opps Something Went Wrong');
+        if (error is AppException)
+          yield WeatherError(
+              error: error.prefix ?? 'Something Went Wrong',
+              data: event.predata);
+        else
+          yield WeatherError(
+              error: 'Something Went Wrong', data: event.predata);
       }
-    } else if (event is GotoInitial) {
-      yield WeatherInitial();
     } else if (event is ResetWeather) {
       yield WeatherLoading();
-      // Location location = await weatherRepo.getCurrentLatandLon(event.city);
       Forecast weatherForecast =
           await weatherRepo.getCurrentForcast(event.location);
       yield WeatherLoaded(weatherForecast, event.location);

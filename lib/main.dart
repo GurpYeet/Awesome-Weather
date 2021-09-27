@@ -1,5 +1,4 @@
 import 'package:awesomeweather/Bloc/weather_bloc.dart';
-import 'package:awesomeweather/UI/search0.2.dart';
 import 'package:awesomeweather/weatherRepo.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -45,21 +44,6 @@ class MyApp extends StatelessWidget {
           child: MaterialApp(
             title: 'Awesome Weather',
             home: MyHomePage(),
-            routes: {
-              '/search': (context) => SearchPage(),
-            },
-
-            onGenerateRoute: (route) {
-              if (route.name == "/someRoute") {
-                return PageRouteBuilder(
-                    settings:
-                        route, // Pass this to make popUntil(), pushNamedAndRemoveUntil(), works
-                    pageBuilder: (_, __, ___) => SearchPage(),
-                    transitionsBuilder: (_, a, __, c) =>
-                        ScaleTransition(scale: a, child: c));
-              }
-            },
-
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
                 primarySwatch: Colors.blue,

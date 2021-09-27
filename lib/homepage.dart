@@ -4,11 +4,12 @@ import 'package:awesomeweather/UI/Details.dart';
 import 'package:awesomeweather/UI/currentWeather.dart';
 import 'package:awesomeweather/UI/dailyForcast.dart';
 import 'package:awesomeweather/UI/hourlyForcast.dart';
+import 'package:awesomeweather/UI/search0.2.dart';
 import 'package:awesomeweather/UI/weather_viewer.dart';
 import 'package:awesomeweather/WeatherModals/forcast.dart';
 import 'package:awesomeweather/WeatherModals/locations.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_weather_bg_null_safety/flutter_weather_bg.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -19,7 +20,25 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocBuilder<WeatherBloc, WeatherState>(
+      body: BlocConsumer<WeatherBloc, WeatherState>(
+        listener: (context, state) {
+          if (state is WeatherError)
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.error,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                backgroundColor: Colors.redAccent,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                duration: Duration(seconds: 2),
+                margin: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                padding: EdgeInsets.all(15),
+              ),
+            );
+        },
         builder: (context, state) {
           if (state is WeatherInitial) {
             return WeatherSearch();
@@ -28,7 +47,16 @@ class MyHomePage extends StatelessWidget {
           } else if (state is WeatherLoaded) {
             return Awesome(forecast: state.forecast, location: state.location);
           } else if (state is WeatherError) {
-            return ErrorWeather(error: state.error);
+            if (state.data.isNotEmpty &&
+                (state.data['forecast'] != null) &&
+                (state.data['location'] != null))
+              return Awesome(
+                forecast: state.data['forecast'],
+                location: state.data['location'],
+                haserror: true,
+                error: state.error,
+              );
+            return WeatherSearch();
           } else {
             return WeatherSearch();
           }
@@ -56,44 +84,77 @@ class WeatherSearch extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                "Enter your city",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: 35),
-              TextField(
-                // onTap: () async {
-                //   var status = await Permission.storage.request();
-                //   if (status.isDenied || status.isPermanentlyDenied) {
-                //     SystemNavigator.pop();
-                //   }
-                // },
-                textAlign: TextAlign.center,
-                cursorColor: Colors.cyanAccent,
-                cursorRadius: Radius.circular(5),
-                cursorWidth: 4,
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                controller: text,
-                cursorHeight: 25,
-                onSubmitted: (text) {
-                  context.read<WeatherBloc>().add(GetWeather(text));
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          SearchPage(forecast: null, location: null),
+                    ),
+                  );
                 },
-                decoration: InputDecoration(
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Search your city",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 40,
+                      color: Colors.white,
+                    )
+                  ],
                 ),
               ),
+              // SizedBox(height: MediaQuery.of(context).size.height * 0.56),
+              // TextButton.icon(
+              //   ,
+              //   icon: Icon(
+              //     Icons.search,
+              //     size: 50,
+              //     color: Colors.white,
+              //   ),
+              //   label: Text(
+              //     'Search',
+              //     style: TextStyle(
+              //         color: Colors.white,
+              //         fontSize: 30,
+              //         fontWeight: FontWeight.bold),
+              //   ),
+              // ),
+              // TextField(
+              //   textAlign: TextAlign.center,
+              //   cursorColor: Colors.cyanAccent,
+              //   cursorRadius: Radius.circular(5),
+              //   cursorWidth: 4,
+              //   style:
+              //       TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              //   controller: text,
+              //   cursorHeight: 25,
+              //   onSubmitted: (text) {
+              //     context.read<WeatherBloc>().add(
+              //           GetWeather(city: text, predata: {}),
+              //         );
+              //   },
+              //   decoration: InputDecoration(
+              //     focusedBorder: OutlineInputBorder(
+              //       borderSide: BorderSide(color: Colors.white),
+              //       borderRadius: BorderRadius.circular(30),
+              //     ),
+              //     enabledBorder: OutlineInputBorder(
+              //       borderSide: BorderSide(color: Colors.white),
+              //       borderRadius: BorderRadius.circular(30),
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -114,9 +175,15 @@ class Loading extends StatelessWidget {
 }
 
 class Awesome extends StatelessWidget {
-  Awesome({Key? key, required this.forecast, required this.location})
+  Awesome(
+      {Key? key,
+      required this.forecast,
+      required this.location,
+      this.haserror = false,
+      this.error = ''})
       : super(key: key);
-
+  final bool haserror;
+  final String error;
   final RefreshController _refreshController =
       RefreshController(initialRefresh: false);
   final Forecast forecast;
@@ -133,6 +200,8 @@ class Awesome extends StatelessWidget {
         ),
         Column(
           children: [
+            // if (haserror)
+
             Container(
               child: AppBar(
                 shape: RoundedRectangleBorder(
@@ -150,7 +219,11 @@ class Awesome extends StatelessWidget {
                       splashColor: Colors.blue[200],
                       hoverColor: Colors.transparent,
                       onPressed: () {
-                        Navigator.pushNamed(context, '/search');
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => SearchPage(
+                                  location: location,
+                                  forecast: forecast,
+                                )));
                       },
                       icon: Icon(Icons.search_rounded),
                     ),
@@ -231,61 +304,6 @@ class Awesome extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class ErrorWeather extends StatelessWidget {
-  final String error;
-  const ErrorWeather({Key? key, required this.error}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: double.infinity,
-      width: double.infinity,
-      decoration: BoxDecoration(
-          image: DecorationImage(
-              image: AssetImage('Assets/images/weather.gif'),
-              fit: BoxFit.cover)),
-      child: Dialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.0)), //this right here
-        child: Container(
-          height: 300.0,
-          width: 300.0,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Padding(
-                padding: EdgeInsets.all(10.0),
-                child: Text(
-                  error,
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(10.0),
-                child: Text(
-                  'Bete dhang se dalo batamiji mat karo app le dubegi phone ko',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              TextButton(
-                  onPressed: () {
-                    context.read<WeatherBloc>().add(GotoInitial());
-                  },
-                  child: Text(
-                    'Got It!',
-                    style: TextStyle(color: Colors.purple, fontSize: 18.0),
-                  ))
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
