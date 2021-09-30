@@ -14,7 +14,7 @@ class Details extends StatelessWidget {
       elevation: 10,
       color: Colors.white.withOpacity(0.3),
       child: Container(
-        margin: EdgeInsets.all(30),
+        margin: EdgeInsets.all(20),
         child: Column(
           children: [
             Container(

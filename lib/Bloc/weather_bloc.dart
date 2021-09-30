@@ -8,7 +8,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 import './bloc.dart';
 
-class WeatherBloc extends HydratedBloc<WeatherEvent, WeatherState> {
+class WeatherBloc extends HydratedBloc<ResetWeather, WeatherState> {
   WeatherRepo weatherRepo;
   DateFormat formater = DateFormat('HH');
   WeatherBloc(this.weatherRepo) : super(WeatherInitial());
@@ -32,35 +32,31 @@ class WeatherBloc extends HydratedBloc<WeatherEvent, WeatherState> {
         'forecast': state.forecast.toJson(),
         'location': state.location.toJson()
       };
+    } else if (state is WeatherError) {
+      return {
+        'forecast': state.data['forecast'],
+        'location': state.data['location'],
+      };
     } else {
       return {};
     }
   }
 
   @override
-  Stream<WeatherState> mapEventToState(WeatherEvent event) async* {
-    if (event is GetWeather) {
-      yield WeatherLoading();
-      try {
-        Location location = await weatherRepo.getCurrentLatandLon(event.city);
-
-        Forecast weatherForecast =
-            await weatherRepo.getCurrentForcast(location);
-        yield WeatherLoaded(weatherForecast, location);
-      } catch (error) {
-        if (error is AppException)
-          yield WeatherError(
-              error: error.prefix ?? 'Something Went Wrong',
-              data: event.predata);
-        else
-          yield WeatherError(
-              error: 'Something Went Wrong', data: event.predata);
-      }
-    } else if (event is ResetWeather) {
-      yield WeatherLoading();
+  Stream<WeatherState> mapEventToState(event) async* {
+    yield WeatherLoading();
+    try {
       Forecast weatherForecast =
           await weatherRepo.getCurrentForcast(event.location);
       yield WeatherLoaded(weatherForecast, event.location);
+    } catch (error) {
+      if (error is AppException)
+        yield WeatherError(
+          error: error.prefix ?? 'Something Went Wrong',
+          data: event.predata,
+        );
+      else
+        yield WeatherError(error: 'Something Went Wrong', data: event.predata);
     }
   }
 }

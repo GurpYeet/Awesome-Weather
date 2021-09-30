@@ -1,3 +1,4 @@
+import 'package:awesomeweather/Bloc/cityBloc.dart';
 import 'package:awesomeweather/Bloc/weather_bloc.dart';
 import 'package:awesomeweather/weatherRepo.dart';
 import 'package:flutter/foundation.dart';
@@ -39,8 +40,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return RepositoryProvider.value(
       value: WeatherRepo,
-      child: BlocProvider(
-          create: (_) => WeatherBloc(WeatherRepo()),
+      child: MultiBlocProvider(
+          providers: [
+            BlocProvider<WeatherBloc>(
+              create: (_) => WeatherBloc(WeatherRepo()),
+            ),
+            BlocProvider<CityBloc>(
+              create: (_) => CityBloc(WeatherRepo()),
+            ),
+          ],
           child: MaterialApp(
             title: 'Awesome Weather',
             home: MyHomePage(),

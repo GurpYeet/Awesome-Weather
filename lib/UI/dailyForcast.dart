@@ -42,7 +42,7 @@ class DailyForecast extends StatelessWidget {
                       style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w400,
-                          fontSize: 13),
+                          fontSize: 10),
                     ),
                     SizedBox(height: 20),
                     ImageIcon(
@@ -57,7 +57,7 @@ class DailyForecast extends StatelessWidget {
                       style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w400,
-                          fontSize: 12),
+                          fontSize: 9),
                     )
                   ],
                 ),

@@ -1,24 +1,21 @@
 // ignore_for_file: must_be_immutable
 
+import 'package:awesomeweather/Bloc/bloc.dart';
+import 'package:awesomeweather/Bloc/cityBloc.dart';
 import 'package:awesomeweather/WeatherModals/forcast.dart';
 import 'package:awesomeweather/WeatherModals/locations.dart';
-import 'package:awesomeweather/weatherRepo.dart';
+import 'package:awesomeweather/custom_progress.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:awesomeweather/Bloc/weather_bloc.dart';
 import 'package:awesomeweather/Bloc/weather_event.dart';
 import 'package:flutter/material.dart';
 
-class SearchPage extends StatefulWidget {
+class SearchPage extends StatelessWidget {
   Forecast? forecast;
   Location? location;
   SearchPage({Key? key, required this.forecast, required this.location})
       : super(key: key);
-
-  @override
-  _SearchPageState createState() => _SearchPageState();
-}
-
-class _SearchPageState extends State<SearchPage> {
   final popularCities = [
     'Delhi',
     'Mumbai',
@@ -58,9 +55,14 @@ class _SearchPageState extends State<SearchPage> {
           child: TextField(
             autofocus: true,
             onChanged: (text) {
-              setState(() {
-                buildSuggestions(context);
-              });
+              if (text.isNotEmpty)
+                context.read<CityBloc>().add(
+                      CityEvent(
+                        city: text,
+                        predata: {'forecast': forecast, 'location': location},
+                      ),
+                    );
+              buildCities(context);
             },
             // onSubmitted: (data) {
             //   close(context, query);
@@ -83,9 +85,7 @@ class _SearchPageState extends State<SearchPage> {
                     Navigator.of(context).pop();
                   } else {
                     query.clear();
-                    setState(() {
-                      buildSuggestions(context);
-                    });
+                    buildCities(context);
                   }
                 },
                 icon: Icon(Icons.clear),
@@ -102,72 +102,127 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
       ),
-      body: query.text.isEmpty
-          ? buildPopularCities(context, popularCities)
-          : buildSuggestions(context),
+      body: buildCities(context),
     );
   }
 
-  close(BuildContext context, TextEditingController query) {
-    if (query.text.isNotEmpty)
+  close(BuildContext context, Location location) {
+    if (location.name.isNotEmpty)
       context.read<WeatherBloc>().add(
-            GetWeather(
-              city: query.text,
-              predata: {
-                'forecast': widget.forecast,
-                'location': widget.location
-              },
+            ResetWeather(
+              location: location,
+              predata: {'forecast': forecast, 'location': location},
             ),
           );
     Navigator.of(context).pop();
   }
 
-  Widget buildSuggestions(BuildContext context) => FutureBuilder<List<String>>(
-        future: WeatherRepo.searchCities(query.text),
-        builder: (context, snapshot) {
-          switch (snapshot.connectionState) {
-            case ConnectionState.waiting:
-              return Container(
-                color: Colors.black,
-                child: Center(
-                  child: CircularProgressIndicator(
-                    backgroundColor: Colors.black,
-                  ),
+  Widget buildCities(BuildContext context) {
+    return Container(
+      color: Colors.black,
+      child: BlocConsumer<CityBloc, CityState>(
+        listener: (context, state) {
+          if (state is CitiesError) if (!state.error
+              .contains('Unable to process')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.error,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                 ),
-              );
-            default:
-              if (snapshot.hasError || snapshot.data!.isEmpty) {
-                return Container(
-                  color: Colors.black,
-                  child: Center(
-                    child: Text(
-                      'No Such City Found',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                );
-              } else if ((snapshot.hasError || snapshot.data!.isEmpty) ||
-                  query.text.isEmpty) {
-                return buildPopularCities(context, popularCities);
-              } else {
-                return buildPopularCities(context, snapshot.data);
-              }
+                backgroundColor: Colors.redAccent,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                duration: Duration(seconds: 2),
+                margin: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                padding: EdgeInsets.all(15),
+              ),
+            );
           }
         },
-      );
+        builder: (context, state) {
+          if (query.text.isNotEmpty) {
+            if (state is CitiesLoaded) {
+              Future.delayed(Duration(seconds: 30));
+              return buildPopularCities(context, state.cities);
+            } else if (state is CityLoading)
+              return Center(
+                child: SpinKitSpinningLines(
+                  color: Colors.limeAccent,
+                ),
+              );
+            return Center(
+              child: Text(
+                'No Such City Found',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            );
+          }
+          return Center(
+            child: Text(
+              'Popular cities',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-  List<Widget> recentCity(BuildContext context, List<String>? city) {
+  // Widget buildSuggestions(BuildContext context) => FutureBuilder<List<String>>(
+  //       future: WeatherRepo.searchCities(query.text),
+  //       builder: (context, snapshot) {
+  //         switch (snapshot.connectionState) {
+  //           case ConnectionState.waiting:
+  //             return Container(
+  //               color: Colors.black,
+  //               child: Center(
+  //                 child: CircularProgressIndicator(
+  //                   backgroundColor: Colors.black,
+  //                 ),
+  //               ),
+  //             );
+  //           default:
+  //             if (snapshot.hasError || snapshot.data!.isEmpty) {
+  //               return Container(
+  //                 color: Colors.black,
+  //                 child: Center(
+  //                   child: Text(
+  //                     'No Such City Found',
+  //                     style: TextStyle(
+  //                       color: Colors.white,
+  //                       fontSize: 30,
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               );
+  //             } else if ((snapshot.hasError || snapshot.data!.isEmpty) ||
+  //                 query.text.isEmpty) {
+  //               return buildPopularCities(context, popularCities);
+  //             } else {
+  //               return buildPopularCities(context, snapshot.data);
+  //             }
+  //         }
+  //       },
+  //     );
+
+  List<Widget> recentCity(BuildContext context, List<Location>? city) {
     int count = city!.length;
     return List<Widget>.generate(
         count,
         (i) => GestureDetector(
               onTap: () {
-                query.text = city[i];
-                close(context, query);
+                close(context, city[i]);
               },
               child: Container(
                 margin: EdgeInsets.all(8),
@@ -177,7 +232,7 @@ class _SearchPageState extends State<SearchPage> {
                   color: Colors.white24,
                 ),
                 child: Text(
-                  city[i],
+                  "${city[i].name},${city[i].country}",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -187,10 +242,10 @@ class _SearchPageState extends State<SearchPage> {
             )).toList();
   }
 
-  Widget buildPopularCities(BuildContext context, List<String>? recents) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: ListView(
+  Widget buildPopularCities(BuildContext context, List<Location>? recents) {
+    return Container(
+      color: Colors.black,
+      child: ListView(
         padding: EdgeInsets.only(top: 20, right: 5),
         children: [
           Wrap(

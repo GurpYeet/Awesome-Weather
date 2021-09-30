@@ -8,6 +8,7 @@ import 'package:awesomeweather/UI/search0.2.dart';
 import 'package:awesomeweather/UI/weather_viewer.dart';
 import 'package:awesomeweather/WeatherModals/forcast.dart';
 import 'package:awesomeweather/WeatherModals/locations.dart';
+import 'package:awesomeweather/custom_progress.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +17,15 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'Bloc/weather_event.dart';
 
 class MyHomePage extends StatelessWidget {
+// late final AnimationController _controller = AnimationController(
+//     duration: const Duration(seconds: 2),
+//     vsync: this,
+//   )..repeat(reverse: true);
+//   late final Animation<double> _animation = CurvedAnimation(
+//     parent: _controller,
+//     curve: Curves.easeIn,
+//   );
+
   MyHomePage({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -43,7 +53,10 @@ class MyHomePage extends StatelessWidget {
           if (state is WeatherInitial) {
             return WeatherSearch();
           } else if (state is WeatherLoading) {
-            return Loading();
+            return Container(
+              child: SpinKitSpinningLines(color: Colors.limeAccent),
+              color: Colors.black,
+            );
           } else if (state is WeatherLoaded) {
             return Awesome(forecast: state.forecast, location: state.location);
           } else if (state is WeatherError) {
@@ -76,100 +89,54 @@ class WeatherSearch extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
           image: DecorationImage(
-              image: AssetImage('Assets/images/weather.gif'),
+              image: AssetImage('Assets/images/initial.jpg'),
               fit: BoxFit.cover)),
-      child: Column(children: [
-        Container(
-          padding: EdgeInsets.all(30),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          SearchPage(forecast: null, location: null),
-                    ),
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Search your city",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 40,
-                      color: Colors.white,
-                    )
-                  ],
-                ),
+      child: Container(
+        padding: EdgeInsets.all(30),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            Text(
+              'Awesome Weather',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 70,
+                fontWeight: FontWeight.w700,
               ),
-              // SizedBox(height: MediaQuery.of(context).size.height * 0.56),
-              // TextButton.icon(
-              //   ,
-              //   icon: Icon(
-              //     Icons.search,
-              //     size: 50,
-              //     color: Colors.white,
-              //   ),
-              //   label: Text(
-              //     'Search',
-              //     style: TextStyle(
-              //         color: Colors.white,
-              //         fontSize: 30,
-              //         fontWeight: FontWeight.bold),
-              //   ),
-              // ),
-              // TextField(
-              //   textAlign: TextAlign.center,
-              //   cursorColor: Colors.cyanAccent,
-              //   cursorRadius: Radius.circular(5),
-              //   cursorWidth: 4,
-              //   style:
-              //       TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              //   controller: text,
-              //   cursorHeight: 25,
-              //   onSubmitted: (text) {
-              //     context.read<WeatherBloc>().add(
-              //           GetWeather(city: text, predata: {}),
-              //         );
-              //   },
-              //   decoration: InputDecoration(
-              //     focusedBorder: OutlineInputBorder(
-              //       borderSide: BorderSide(color: Colors.white),
-              //       borderRadius: BorderRadius.circular(30),
-              //     ),
-              //     enabledBorder: OutlineInputBorder(
-              //       borderSide: BorderSide(color: Colors.white),
-              //       borderRadius: BorderRadius.circular(30),
-              //     ),
-              //   ),
-              // ),
-            ],
-          ),
+            ),
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        SearchPage(forecast: null, location: null),
+                  ),
+                );
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Search your city",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 40,
+                    color: Colors.white,
+                  )
+                ],
+              ),
+            ),
+          ],
         ),
-      ]),
-    );
-  }
-}
-
-class Loading extends StatelessWidget {
-  const Loading({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(),
+      ),
     );
   }
 }
@@ -235,12 +202,17 @@ class Awesome extends StatelessWidget {
               child: SmartRefresher(
                 controller: _refreshController,
                 onRefresh: () {
-                  context.read<WeatherBloc>().add(ResetWeather(location));
+                  context.read<WeatherBloc>().add(
+                        ResetWeather(
+                          location: location,
+                          predata: {'forecast': forecast, 'location': location},
+                        ),
+                      );
                 },
                 child: ListView(
                   physics: BouncingScrollPhysics(),
                   padding:
-                      EdgeInsets.only(left: 20, top: 30, right: 20, bottom: 50),
+                      EdgeInsets.only(left: 20, top: 30, right: 20, bottom: 20),
                   children: [
                     CurrentWeather(
                       forecast: forecast,
@@ -275,26 +247,23 @@ class Awesome extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Open Weather Map',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          Text(
-                            'Updated 20/07 8:30 pm',
-                            style: TextStyle(color: Colors.white),
-                          )
-                        ],
+                      child: Text(
+                        'Open Weather Map',
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
                     SizedBox(width: 5),
                     IconButton(
                       color: Colors.white,
-                      onPressed: () => context
-                          .read<WeatherBloc>()
-                          .add(ResetWeather(location)),
+                      onPressed: () => context.read<WeatherBloc>().add(
+                            ResetWeather(
+                              location: location,
+                              predata: {
+                                'forecast': forecast,
+                                'location': location
+                              },
+                            ),
+                          ),
                       icon: Icon(Icons.refresh),
                     )
                   ],
